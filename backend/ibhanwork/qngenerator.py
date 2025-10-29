@@ -10,7 +10,7 @@ from tqdm import tqdm
 API_KEY = "AIzaSyDg73KGgHkLntpyI_S9Dbho93zfu4EJOxg"   # 👈 REPLACE with your actual Gemini API key
 MODEL = "gemini-2.5-flash"  # Use gemini-2.5-flash or gemini-2.0-flash (free tier supported)
 
-ZIP_FILE = "resumes.zip"        # 👈this  zip file will contain text files combining the text from github and resumes given by the textract each test file will have combined github and resumes one text file per candidate
+ZIP_FILE = "resumes.zip"        # 👈this  zip file will contain text files combining the text from github and resumes given by the textxtract each test file will have combined github and resumes one text file per candidate
 EXTRACT_DIR = "resumes"
 OUTPUT_DIR = "interview_outputs"
 
