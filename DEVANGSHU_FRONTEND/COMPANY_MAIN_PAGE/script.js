@@ -1,34 +1,4 @@
 // ===============================
-// 🔐 AUTHENTICATION CHECK
-// ===============================
-// Check authentication on page load
-(async function initAuth() {
-  const session = await checkAuth();
-  if (!session) {
-    // Not authenticated, redirect to login
-    alert("Please log in to access this page.");
-    window.location.href = "../COMPANY_LOGIN/index.html";
-    return;
-  }
-
-  // Get user data and display company name
-  const user = await getCurrentUser();
-  if (user && user.user_metadata) {
-    const companyName = user.user_metadata.company_name || "Company";
-    document.getElementById("user-name").textContent = `Welcome, ${companyName}!`;
-  }
-
-  // Setup logout button
-  document.getElementById("logout-btn").addEventListener("click", async () => {
-    const success = await signOut();
-    if (success) {
-      alert("Logged out successfully.");
-      window.location.href = "../COMPANY_LOGIN/index.html";
-    }
-  });
-})();
-
-// ===============================
 // 🔐 CONFIGURATION
 // ===============================
 
@@ -36,6 +6,141 @@
 const API_BASE_URL = "https://your-backend-domain.com/api"; // Example: https://api.myresumescore.ai/api
 const API_KEY = "YOUR_API_KEY_HERE"; // Securely store this (not hardcoded in production)
 
+
+document.addEventListener('DOMContentLoaded', () => {
+  // --- Experience slider show/hide + display ---
+  const yesRadio = document.getElementById('experience-yes');
+  const radios = document.querySelectorAll('input[name="experience"]');
+  const sliderContainer = document.getElementById('experienceSliderContainer');
+  const slider = document.getElementById('experienceRange');
+  const output = document.getElementById('experienceValue');
+
+  function updateVisibility() {
+    if (yesRadio && yesRadio.checked) sliderContainer.style.display = 'block';
+    else sliderContainer.style.display = 'none';
+  }
+  function updateOutput() {
+    if (!slider || !output) return;
+    const val = Math.round(Number(slider.value));
+    output.textContent = `${val} ${val === 1 ? 'yr' : 'yrs'}`;
+  }
+
+  radios.forEach(r => r.addEventListener('change', updateVisibility));
+  if (slider) slider.addEventListener('input', updateOutput);
+  updateVisibility();
+  updateOutput();
+
+  // --- CGPA slider show/hide + display ---
+  const cgpaYes = document.getElementById('cgpa-yes');
+  const cgpaRadios = document.querySelectorAll('input[name="cgpa"]');
+  const cgpaContainer = document.getElementById('cgpaSliderContainer');
+  const cgpaSlider = document.getElementById('cgpaRange');
+  const cgpaOutput = document.getElementById('cgpaValue');
+
+  function updateCgpaVisibility() {
+    if (cgpaYes && cgpaYes.checked) cgpaContainer.style.display = 'block';
+    else cgpaContainer.style.display = 'none';
+  }
+  function updateCgpaOutput() {
+    if (!cgpaSlider || !cgpaOutput) return;
+    const val = Number(cgpaSlider.value);
+    cgpaOutput.textContent = val.toFixed(2);
+  }
+
+  cgpaRadios.forEach(r => r.addEventListener('change', updateCgpaVisibility));
+  if (cgpaSlider) cgpaSlider.addEventListener('input', updateCgpaOutput);
+  updateCgpaVisibility();
+  updateCgpaOutput();
+
+  // --- File validation + submit + mock fallback rendering ---
+  const submitBtn = document.getElementById('submitBtn');
+  const fileInput = document.getElementById('uploadFile');
+  const resultsEl = document.getElementById('results');
+
+  function isValidFile(file) {
+    if (!file) return true;
+    const allowed = ['.zip', '.pdf', '.docx', '.doc'];
+    const name = file.name.toLowerCase();
+    return allowed.some(ext => name.endsWith(ext));
+  }
+
+  async function fetchRank(formData) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    try {
+      const res = await fetch('/api/rank', { method: 'POST', body: formData, signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error('backend error');
+      const json = await res.json();
+      if (!json || !Array.isArray(json.results) || json.results.length === 0) throw new Error('empty results');
+      return { data: json.results, source: 'backend' };
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
+  }
+
+  function mockDataset() {
+    return [
+      { name: 'Asha Verma', score: 92, skills: ['React','TypeScript','Node.js'], note: 'Strong portfolio' },
+      { name: 'Rahul Singh', score: 88, skills: ['Node.js','Databases'], note: 'Great backend fit' },
+      { name: 'Maya Patel', score: 85, skills: ['React','Design'], note: 'UI-focused' },
+      { name: 'Samir Khan', score: 80, skills: ['Fullstack','DevOps'], note: 'Broad experience' },
+      { name: 'Priya Nair', score: 76, skills: ['TypeScript','Testing'], note: 'Reliable tests' }
+    ];
+  }
+
+  function renderResults(items, meta = {}) {
+    if (!resultsEl) return;
+    resultsEl.innerHTML = '';
+    const header = document.createElement('div');
+    header.className = 'results-header';
+    header.innerHTML = `<strong>Ranking (${items.length})</strong>
+                        <span class="meta">${meta.source ? 'Source: ' + meta.source : ''} ${meta.fallback ? '(fallback used)' : ''}</span>`;
+    resultsEl.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'results-list';
+    items.forEach((it, idx) => {
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      card.innerHTML = `
+        <div class="rank">#${idx + 1}</div>
+        <div class="info">
+          <div class="name">${it.name || it.candidate || 'Candidate ' + (idx+1)}</div>
+          <div class="meta-line">Score: <strong>${it.score ?? it.matchScore ?? '—'}</strong> • ${(it.skills||[]).slice(0,4).join(', ')}</div>
+          <div class="note">${it.note || it.summary || ''}</div>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+    resultsEl.appendChild(list);
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const file = fileInput?.files?.[0];
+      if (!isValidFile(file)) {
+        alert('Invalid file type. Use .zip, .pdf, .docx or .doc');
+        return;
+      }
+
+      const roleInput = document.querySelector('.form-grid input[type="text"]')?.value || '';
+      const formData = new FormData();
+      formData.append('role', roleInput);
+      if (file) formData.append('file', file);
+
+      try {
+        const res = await fetchRank(formData);
+        renderResults(res.data, { source: 'backend' });
+      } catch (err) {
+        const fallback = mockDataset();
+        renderResults(fallback, { source: 'mock', fallback: true });
+      }
+    });
+  }
+});
 
 // ===============================
 // 🎯 DOM ELEMENTS
@@ -289,3 +394,7 @@ dropArea.addEventListener("drop", e => {
 resumeUpload.addEventListener("change", () => {
   if (resumeUpload.files.length) calculateBtn.click();
 });
+document.getElementById("submitBtn").addEventListener("click", () => {
+  alert("✅ Job posting submitted successfully!");
+});
+
