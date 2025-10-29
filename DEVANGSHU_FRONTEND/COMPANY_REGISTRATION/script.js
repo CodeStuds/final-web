@@ -1,6 +1,8 @@
 // ======== COMPANY REGISTRATION WITH SUPABASE AUTH ========
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("companyForm");
+    const togglePassword = document.getElementById("togglePassword");
+    const passwordInput = document.getElementById("password");
 
     // Check if user is already logged in
     checkAuth().then(session => {
@@ -10,32 +12,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    
+    // Password toggle functionality
+    togglePassword.addEventListener("click", () => {
+        const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+        passwordInput.setAttribute("type", type);
+        togglePassword.textContent = type === "password" ? "👁️" : "🙈";
+    });
 
-    const togglePassword = document.getElementById("togglePassword");
-const passwordInput = document.getElementById("password");
-
-togglePassword.addEventListener("click", () => {
-  const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
-  passwordInput.setAttribute("type", type);
-  togglePassword.textContent = type === "password" ? "👁️" : "🙈";
-});
-
-
-// Simple form validation alert
-document.getElementById("loginForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  const password = passwordInput.value.trim();
-
-  if (!email || !password) {
-    alert("Please fill in all fields!");
-  } else {
-    alert(`Welcome back, traveler! ✈️`);
- }
-});
-
-form.addEventListener("submit", async function(event) {
+    // Handle registration form submission
+    form.addEventListener("submit", async function(event) {
         event.preventDefault();
 
         // Collect input values
@@ -59,7 +44,8 @@ form.addEventListener("submit", async function(event) {
         }
 
         // Show loading state
-        const submitButton = form.querySelector("button");
+        const submitButton = form.querySelector("button[type='submit']");
+        const originalText = submitButton.textContent;
         submitButton.disabled = true;
         submitButton.textContent = "Registering...";
 
@@ -99,7 +85,7 @@ form.addEventListener("submit", async function(event) {
             console.error("Registration error:", error);
 
             // Handle specific error messages
-            if (error.message.includes("already registered")) {
+            if (error.message.includes("already registered") || error.message.includes("already been registered")) {
                 alert("❌ This email is already registered. Please use a different email or login.");
             } else if (error.message.includes("password")) {
                 alert("❌ Password error: " + error.message);
@@ -109,8 +95,7 @@ form.addEventListener("submit", async function(event) {
         } finally {
             // Reset button state
             submitButton.disabled = false;
-            submitButton.textContent = "Register";
+            submitButton.textContent = originalText;
         }
     });
 });
-

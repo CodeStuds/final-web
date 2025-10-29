@@ -7,7 +7,6 @@
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/supabase-config.js"></script>
-    <script src="/COMPANY_REGISTRATION/script.js" defer></script>
 </head>
 <body>
   <div class="container">
@@ -26,12 +25,12 @@
     <div class="right-section">
       <h1>Hire Right. HireSight!</h1>
 
-      <form id="loginForm">
-        <label for="email">Company Name</label>
+      <form id="companyForm">
+        <label for="companyName">Company Name</label>
         <input type="text" id="companyName" placeholder="Input company name" required />
 
-        <label for="companyGoal">Company Goal</label>
-        <input type="text" id="companyGoal" placeholder="Input company goal" required />
+        <label for="goal">Company Goal</label>
+        <input type="text" id="goal" placeholder="Input company goal" required />
 
         <label for="email">Email</label>
         <input type="email" id="email" placeholder="Input email" required />
@@ -49,9 +48,9 @@
           </div>
         </div>
 
-        <label for="companyDescription">What your Company Does?</label>
-        <input type="text" id="companyDescription" placeholder="Input company description" required />
-        <button type="submit" class="login-btn"><a href="../COMPANY_LOGIN/index.html">REGISTER</a></button>
+        <label for="description">What your Company Does?</label>
+        <input type="text" id="description" placeholder="Input company description" required />
+        <button type="submit" class="login-btn">REGISTER</button>
       </form>
 
       <div class="divider">Or</div>
@@ -73,7 +72,7 @@
     </div>
   </div>
 
-  <script src="/COMPANY_REGISTRATION/script.js"></script>
+  <script src="/COMPANY_REGISTRATION/script.js" defer></script>
 </body>
 </html>
 

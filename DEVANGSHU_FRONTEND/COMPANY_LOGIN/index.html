@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HireSight | Login</title>
   <link rel="stylesheet" href="/COMPANY_LOGIN/style.css" />
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/supabase-config.js"></script>
 </head>
 <body>
   <div class="container">
@@ -23,8 +26,7 @@
     <div class="right-section">
       <h1>Hire Right. HireSight!</h1>
 
-     
-        
+      <form id="loginForm">
         <label for="email">Email</label>
         <input type="email" id="email" placeholder="Input email" required />
 
@@ -42,7 +44,7 @@
         </div>
 
 
-        <button type="submit" class="login-btn"><a href="../COMPANY_MAIN_PAGE/index.html">Login</a></button>
+        <button type="submit" class="login-btn">Login</button>
       </form>
 
       <div class="divider">Or</div>
@@ -64,6 +66,6 @@
     </div>
   </div>
 
-  <script src="/COMPANY_LOGIN/script.js"></script>
+  <script src="/COMPANY_LOGIN/script.js" defer></script>
 </body>
 </html>

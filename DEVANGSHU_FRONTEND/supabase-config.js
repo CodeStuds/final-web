@@ -1,10 +1,10 @@
 // ======== SUPABASE CONFIGURATION ========
 // Shared Supabase client configuration for authentication
-// IMPORTANT: Set these values in your environment or build configuration
-// DO NOT commit actual credentials to version control
+// IMPORTANT: Replace SUPABASE_ANON_KEY with your actual key from Supabase dashboard
+// Get it from: Supabase Dashboard > Project Settings > API > anon public key
 
-const SUPABASE_URL = window.ENV?.SUPABASE_URL || "YOUR_SUPABASE_URL_HERE";
-const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY_HERE";
+const SUPABASE_URL = "https://laqedbvdwsbhsckcbskw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxhcWVkYnZkd3NiaHNja2Nic2t3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NDYxODgsImV4cCI6MjA3NzMyMjE4OH0.5tqQguiDtIHB23bZC6y9LE1qZXRL-vDAT8wXZrfpsps";
 
 // Initialize Supabase client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
