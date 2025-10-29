@@ -1,1 +1,1 @@
-fromt the data entered in the COMPANY_MAINPAGE it combines it all into one single job description desc.txt
+fromt the data entered in the COMPANY_MAIN_PAGE it combines it all into one single job description desc.txt
