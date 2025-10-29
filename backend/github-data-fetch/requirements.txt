@@ -1,0 +1,9 @@
+PyGithub
+requests
+pandas
+numpy
+textblob
+beautifulsoup4
+python-dateutil
+PyYAML
+toml

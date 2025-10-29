@@ -1,0 +1,43 @@
+<html>
+<head>
+    <title>Company Registration</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase-config.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Company Registration</h1>
+    </header>
+    <main>
+        <form id="companyForm">
+            <label for="companyName">Company Name:</label>
+            <input type="text" id="companyName" name="companyName" required>
+
+            <label for="email">Company Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required minlength="6">
+
+            <label for="goal">What is your company Goal ? :</label>
+            <input type="text" id="goal" name="goal" required>
+
+            <label for="description">What your company does:</label>
+            <input type="text" id="description" name="description" required>
+
+            <button type="submit">Register</button>
+
+            <!-- Added link to company login -->
+            <p class="login-link">Already have an account? <a href="../COMPANY_LOGIN/index.html">Sign in</a></p>
+        </form>
+    </main>
+    <footer>
+        <p>&copy; 2025 Company Name. All rights reserved.</p>
+    </footer>
+</body>
+</html>

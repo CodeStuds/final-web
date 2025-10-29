@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Company Login</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-config.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Company Login</h1>
+  </header>
+
+  <main>
+    <form id="loginForm">
+      <label for="email">Company Email:</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" placeholder="Enter your password" required>
+
+      <button type="submit">Login</button>
+
+      <div class="extra-links">
+        <a href="..\COMPANY_REGISTRATION\index.html">Don’t have an account? Register here</a>
+      </div>
+    </form>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Company Name. All rights reserved.</p>
+  </footer>
+
+  <!-- Link to external JS file -->
+  <script src="script.js"></script>
+</body>
+</html>

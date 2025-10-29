@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Score Checker</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../supabase-config.js"></script>
+    <script>
+        // Tailwind config for custom colors/fonts
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36B37E',
+                        warning: '#FFAB00',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E4E7ED',
+                            700: '#4E5969',
+                            800: '#272E3B',
+                        }
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .progress-bar-fill {
+                transition: width 0.6s ease;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-neutral-100 text-neutral-800 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <span class="text-primary font-bold text-xl"><img src="logo.png" class="h-8 inline-block" /></span>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <span id="user-name" class="text-neutral-700 font-medium"></span>
+                    <button id="logout-btn" class="bg-danger text-white px-4 py-2 rounded-md hover:bg-danger/90 transition-colors text-sm font-medium">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Hero Header -->
+        <section class="text-center mb-10">
+            <h1 class="text-[clamp(1.8rem,4vw,2.8rem)] font-bold text-neutral-800 mb-4">
+                Get Your Resume Score Instantly
+            </h1>
+            <p class="text-neutral-700 max-w-2xl mx-auto text-[clamp(1rem,1.5vw,1.1rem)]">
+                Our AI analyzes your resume against 100+ hiring criteria to tell you exactly how to improve your chances of getting an interview.
+            </p>
+        </section>
+
+        <!-- Upload Section (Initial State) -->
+        <section id="upload-section" class="bg-white rounded-xl shadow-md p-8 max-w-2xl mx-auto transition-all">
+            <div class="border-2 border-dashed border-neutral-200 rounded-lg p-8 text-center hover:border-primary transition-colors" id="drop-area">
+                <svg class="w-12 h-12 text-neutral-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <h3 class="text-lg font-medium mb-2">Upload Your Resume</h3>
+                <p class="text-neutral-700 mb-4 text-sm">Drag and drop your resume here, or click to browse</p>
+                
+                <input type="file" id="resume-upload" class="hidden" accept=".pdf,.doc,.docx,.txt">
+                <label for="resume-upload" class="bg-primary/10 text-primary px-5 py-2 rounded-md hover:bg-primary/20 transition-colors cursor-pointer text-sm font-medium">
+                    Select File
+                </label>
+                
+                <p class="mt-6 text-xs text-neutral-700">Supported formats: PDF, DOC, DOCX, TXT, .ZIP</p>
+            </div>
+
+            <div class="mt-6 text-center">
+                <button id="calculate-btn" class="bg-primary text-white px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium w-full sm:w-auto">
+                    SUBMIT
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading State (Hidden by Default) -->
+        <section id="loading-section" class="hidden max-w-2xl mx-auto text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <p class="mt-4 text-neutral-700">Analyzing your resume... This takes ~15 seconds.</p>
+        </section>
+
+        <!-- Score Results Section (Hidden by Default) -->
+        <section id="results-section" class="hidden bg-white rounded-xl shadow-md p-8 max-w-3xl mx-auto transition-all">
+            <!-- Main Score Display -->
+            <div class="text-center mb-10">
+                <div class="inline-block bg-primary/10 rounded-full p-4 mb-4">
+                    <span id="main-score" class="text-5xl font-bold text-primary">82</span>
+                    <span class="text-xl font-medium text-neutral-700">/100</span>
+                </div>
+                <h2 id="score-grade" class="text-xl font-semibold text-secondary mb-2">Great – Minor Improvements Needed</h2>
+                <p class="text-neutral-700 max-w-xl mx-auto">
+                    Your resume is strong, but small tweaks to keywords and achievement metrics will help you stand out to recruiters.
+                </p>
+            </div>
+
+            <!-- Score Breakdown by Category -->
+            <div class="space-y-8 mb-10">
+                <h3 class="text-lg font-semibold text-neutral-800 border-b border-neutral-200 pb-2">Score Breakdown</h3>
+
+                <!-- Keyword Match Category -->
+                <div class="category-card">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium">ATS Keyword Match</span>
+                        <span id="keyword-score" class="text-neutral-700">78/100</span>
+                    </div>
+                    <div class="w-full bg-neutral-200 rounded-full h-2.5 mb-2">
+                        <div id="keyword-bar" class="progress-bar-fill bg-primary h-2.5 rounded-full" style="width: 78%"></div>
+                    </div>
+                    <p class="text-sm text-neutral-700">
+                        Tip: Add 2-3 more industry-specific keywords (e.g., "agile methodology", "customer retention") to pass ATS filters.
+                    </p>
+                </div>
+
+                <!-- Achievement Impact Category -->
+                <div class="category-card">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium">Achievement Impact</span>
+                        <span id="achievement-score" class="text-neutral-700">85/100</span>
+                    </div>
+                    <div class="w-full bg-neutral-200 rounded-full h-2.5 mb-2">
+                        <div id="achievement-bar" class="progress-bar-fill bg-secondary h-2.5 rounded-full" style="width: 85%"></div>
+                    </div>
+                    <p class="text-sm text-neutral-700">
+                        Tip: Quantify more achievements (e.g., "Increased sales by 20%") instead of generic statements like "Improved performance".
+                    </p>
+                </div>
+
+                <!-- Formatting Category -->
+                <div class="category-card">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium">Formatting & Readability</span>
+                        <span id="formatting-score" class="text-neutral-700">88/100</span>
+                    </div>
+                    <div class="w-full bg-neutral-200 rounded-full h-2.5 mb-2">
+                        <div id="formatting-bar" class="progress-bar-fill bg-warning h-2.5 rounded-full" style="width: 88%"></div>
+                    </div>
+                    <p class="text-sm text-neutral-700">
+                        Tip: Shorten your work experience bullet points to 2-3 lines each for better scannability.
+                    </p>
+                </div>
+
+                <!-- Length Category -->
+                <div class="category-card">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium">Resume Length</span>
+                        <span id="length-score" class="text-neutral-700">75/100</span>
+                    </div>
+                    <div class="w-full bg-neutral-200 rounded-full h-2.5 mb-2">
+                        <div id="length-bar" class="progress-bar-fill bg-danger h-2.5 rounded-full" style="width: 75%"></div>
+                    </div>
+                    <p class="text-sm text-neutral-700">
+                        Tip: Your resume is 3 pages long – aim for 1-2 pages for mid-career professionals.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CTA Section -->
+            <div class="text-center">
+                <button class="bg-primary text-white px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium w-full sm:w-auto">
+                    View Full Detailed Feedback
+                </button>
+                <p class="mt-4 text-sm text-neutral-700">
+                    Get personalized edits, keyword suggestions, and recruiter-approved templates.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-neutral-200 py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-neutral-700 text-sm">
+            <p>© 2024 ResumeScore. All rights reserved.</p>
+            <div class="mt-2 space-x-4">
+                <a href="#" class="hover:text-primary transition-colors">Privacy Policy</a>
+                <a href="#" class="hover:text-primary transition-colors">Terms of Service</a>
+                <a href="#" class="hover:text-primary transition-colors">Contact Us</a>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
