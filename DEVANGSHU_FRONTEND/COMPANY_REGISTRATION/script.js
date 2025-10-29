@@ -10,7 +10,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    form.addEventListener("submit", async function(event) {
+    
+
+    const togglePassword = document.getElementById("togglePassword");
+const passwordInput = document.getElementById("password");
+
+togglePassword.addEventListener("click", () => {
+  const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+  passwordInput.setAttribute("type", type);
+  togglePassword.textContent = type === "password" ? "👁️" : "🙈";
+});
+
+
+// Simple form validation alert
+document.getElementById("loginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!email || !password) {
+    alert("Please fill in all fields!");
+  } else {
+    alert(`Welcome back, traveler! ✈️`);
+ }
+});
+
+form.addEventListener("submit", async function(event) {
         event.preventDefault();
 
         // Collect input values
@@ -88,3 +113,4 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
