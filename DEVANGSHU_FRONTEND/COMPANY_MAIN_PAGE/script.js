@@ -2,9 +2,9 @@
 // 🔐 CONFIGURATION
 // ===============================
 
-// TODO: Replace these placeholders with your actual backend details
-const API_BASE_URL = "https://your-backend-domain.com/api"; // Example: https://api.myresumescore.ai/api
-const API_KEY = "YOUR_API_KEY_HERE"; // Securely store this (not hardcoded in production)
+// API Configuration - Update for production deployment
+const API_BASE_URL = "http://localhost:5000/api"; // Change to your deployed backend URL
+const API_KEY = ""; // Optional: Add API key if you implement authentication
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,9 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchRank(formData) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6000);
+    const timeout = setTimeout(() => controller.abort(), 15000); // Increased timeout
     try {
-      const res = await fetch('/api/rank', { method: 'POST', body: formData, signal: controller.signal });
+      const res = await fetch(`${API_BASE_URL}/rank`, { 
+        method: 'POST', 
+        body: formData, 
+        signal: controller.signal 
+      });
       clearTimeout(timeout);
       if (!res.ok) throw new Error('backend error');
       const json = await res.json();
@@ -127,16 +131,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const roleInput = document.querySelector('.form-grid input[type="text"]')?.value || '';
+      const skillsInput = document.querySelectorAll('.form-grid input[type="text"]')[1]?.value || '';
+      
+      // Get experience and CGPA values
+      const expYes = document.getElementById('experience-yes');
+      const expSlider = document.getElementById('experienceRange');
+      const experienceValue = (expYes && expYes.checked && expSlider) ? expSlider.value : 'Not important';
+      
+      const cgpaYes = document.getElementById('cgpa-yes');
+      const cgpaSlider = document.getElementById('cgpaRange');
+      const cgpaValue = (cgpaYes && cgpaYes.checked && cgpaSlider) ? cgpaSlider.value : 'Not important';
+      
+      const additionalReqs = document.querySelector('textarea')?.value || '';
+      
       const formData = new FormData();
       formData.append('role', roleInput);
+      formData.append('skills', skillsInput);
+      formData.append('experience', experienceValue);
+      formData.append('cgpa', cgpaValue);
+      formData.append('additional', additionalReqs);
       if (file) formData.append('file', file);
+
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Processing...';
 
       try {
         const res = await fetchRank(formData);
         renderResults(res.data, { source: 'backend' });
       } catch (err) {
+        console.warn('Backend unavailable, using fallback:', err);
         const fallback = mockDataset();
         renderResults(fallback, { source: 'mock', fallback: true });
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Job Posting';
       }
     });
   }
@@ -201,9 +230,6 @@ async function getResumeScore(file) {
     // Call your backend API
     const response = await fetch(`${API_BASE_URL}/analyze`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-      },
       body: formData,
     });
 
