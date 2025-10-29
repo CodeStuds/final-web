@@ -10,34 +10,69 @@
     <script src="script.js" defer></script>
 </head>
 <body>
-    <header>
-        <h1>Company Registration</h1>
-    </header>
-    <main>
-        <form id="companyForm">
-            <label for="companyName">Company Name:</label>
-            <input type="text" id="companyName" name="companyName" required>
+  <div class="container">
+    <!-- Left Section (Video + Quote) -->
+    <div class="left-section">
+      <div class="overlay"></div>
 
-            <label for="email">Company Email:</label>
-            <input type="email" id="email" name="email" required>
+      <!-- 🎥 Replaced image with video -->
+      <video autoplay muted loop playsinline class="bg-video">
+        <source src="video.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
 
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required minlength="6">
+    <!-- Right Section (Login Form) -->
+    <div class="right-section">
+      <h1>Hire Right. HireSight!</h1>
 
-            <label for="goal">What is your company Goal ? :</label>
-            <input type="text" id="goal" name="goal" required>
+      <form id="loginForm">
+        <label for="email">Company Name</label>
+        <input type="text" id="companyName" placeholder="Input company name" required />
 
-            <label for="description">What your company does:</label>
-            <input type="text" id="description" name="description" required>
+        <label for="companyGoal">Company Goal</label>
+        <input type="text" id="companyGoal" placeholder="Input company goal" required />
 
-            <button type="submit">Register</button>
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Input email" required />
 
-            <!-- Added link to company login -->
-            <p class="login-link">Already have an account? <a href="../COMPANY_LOGIN/index.html">Sign in</a></p>
-        </form>
-    </main>
-    <footer>
-        <p>&copy; 2025 Company Name. All rights reserved.</p>
-    </footer>
+        <div class="password-container">
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input type="password" id="password" placeholder="Enter your password" />
+            <span class="toggle" id="togglePassword">👁️</span>
+          </div>
+
+          <div class="options">
+            <label><input type="checkbox" id="remember" /> Remember me</label>
+            <a href="#">Forgot your password?</a>
+          </div>
+        </div>
+
+        <label for="companyDescription">What your Company Does?</label>
+        <input type="text" id="companyDescription" placeholder="Input company description" required />
+        <button type="submit" class="login-btn">Login - Continue Exploring and Planning</button>
+      </form>
+
+      <div class="divider">Or</div>
+
+      <div class="social-login">
+        <button class="google">
+          <img src="google.jpg" alt="Google logo" class="social-icon">
+          Sign up with Google
+        </button>
+        <button class="apple">
+          <img src="apple.png" alt="Apple logo" class="social-icon">
+          Sign up with Apple
+        </button>
+        <button class="facebook">
+          <img src="facebook.png" alt="Facebook logo" class="social-icon">
+          Sign up with Facebook
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
