@@ -2,9 +2,22 @@
 // 🔐 CONFIGURATION
 // ===============================
 
-// API Configuration - Update for production deployment
-const API_BASE_URL = "http://localhost:5000/api"; // Change to your deployed backend URL
-const API_KEY = ""; // Optional: Add API key if you implement authentication
+// API Configuration - Uses environment variables when available
+// For local development, defaults to localhost
+// For production, set window.ENV.API_BASE_URL and window.ENV.API_KEY
+const API_BASE_URL = window.ENV?.API_BASE_URL || "http://localhost:5000/api";
+const API_KEY = window.ENV?.API_KEY || ""; // Optional: API key for authenticated requests
+
+// Helper function to add API key to requests
+function getHeaders() {
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (API_KEY) {
+    headers['X-API-Key'] = API_KEY;
+  }
+  return headers;
+}
 
 
 document.addEventListener('DOMContentLoaded', () => {

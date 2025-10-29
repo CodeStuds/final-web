@@ -15,13 +15,28 @@ import json
 import tempfile
 import shutil
 import zipfile
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
+from functools import wraps
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('hiresight.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Add backend subdirectories to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'github-data-fetch'))
@@ -40,7 +55,7 @@ except ImportError:
         from analyzer import GitHubAnalyzer
         from matcher import CandidateMatcher
     except ImportError:
-        print("Warning: GitHub modules not available")
+        logger.warning("GitHub modules not available")
         GitHubDataFetcher = None
         GitHubAnalyzer = None
         CandidateMatcher = None
@@ -50,10 +65,24 @@ except ImportError:
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
+# Setup rate limiting
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["100 per hour", "20 per minute"],
+    storage_uri="memory://"
+)
+
+# API Key configuration (optional, for production)
+API_KEYS_ENABLED = os.environ.get('API_KEYS_ENABLED', 'False').lower() == 'true'
+VALID_API_KEYS = set(os.environ.get('API_KEYS', '').split(',')) if os.environ.get('API_KEYS') else set()
+
 # File upload configuration
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 ALLOWED_EXTENSIONS = {'zip', 'pdf', 'docx', 'doc', 'txt'}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_ZIP_EXTRACTED_SIZE = 200 * 1024 * 1024  # 200MB max extracted size (ZIP bomb protection)
+MAX_ZIP_FILES = 100  # Maximum number of files in a ZIP
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
@@ -66,9 +95,107 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # UTILITY FUNCTIONS
 # ============================================================================
 
+def require_api_key(f):
+    """
+    Decorator to require API key authentication
+
+    Checks for API key in:
+    1. X-API-Key header
+    2. api_key query parameter
+
+    Only enforced if API_KEYS_ENABLED environment variable is set to True
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not API_KEYS_ENABLED:
+            # API key authentication is disabled
+            return f(*args, **kwargs)
+
+        # Check header first
+        api_key = request.headers.get('X-API-Key')
+
+        # Fall back to query parameter
+        if not api_key:
+            api_key = request.args.get('api_key')
+
+        # Validate API key
+        if not api_key or api_key not in VALID_API_KEYS:
+            logger.warning(f"Unauthorized API access attempt from {get_remote_address()}")
+            return jsonify({
+                'error': 'Invalid or missing API key',
+                'message': 'Provide a valid API key via X-API-Key header or api_key parameter'
+            }), 401
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 def allowed_file(filename: str) -> bool:
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def is_safe_path(base_path: str, target_path: str) -> bool:
+    """
+    Check if target_path is safely within base_path (prevents directory traversal)
+
+    Args:
+        base_path: The base directory that should contain the file
+        target_path: The target file path to validate
+
+    Returns:
+        bool: True if path is safe, False otherwise
+    """
+    # Resolve to absolute paths
+    base = os.path.abspath(base_path)
+    target = os.path.abspath(target_path)
+
+    # Ensure target is within base directory
+    return target.startswith(base)
+
+
+def safe_extract_zip(zip_path: str, extract_dir: str) -> tuple[bool, str]:
+    """
+    Safely extract ZIP file with protection against ZIP bombs and directory traversal
+
+    Args:
+        zip_path: Path to ZIP file
+        extract_dir: Directory to extract files to
+
+    Returns:
+        tuple: (success: bool, error_message: str)
+    """
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            # Check total extracted size and file count
+            total_size = 0
+            file_count = 0
+
+            for info in zip_ref.infolist():
+                file_count += 1
+                total_size += info.file_size
+
+                # Check limits
+                if file_count > MAX_ZIP_FILES:
+                    return False, f"ZIP contains too many files (max {MAX_ZIP_FILES})"
+
+                if total_size > MAX_ZIP_EXTRACTED_SIZE:
+                    return False, f"ZIP extracted size too large (max {MAX_ZIP_EXTRACTED_SIZE / (1024*1024):.0f}MB)"
+
+                # Check for directory traversal
+                extract_path = os.path.join(extract_dir, info.filename)
+                if not is_safe_path(extract_dir, extract_path):
+                    return False, f"ZIP contains unsafe path: {info.filename}"
+
+            # Extract if all checks pass
+            zip_ref.extractall(extract_dir)
+            return True, ""
+
+    except zipfile.BadZipFile:
+        return False, "Invalid or corrupted ZIP file"
+    except Exception as e:
+        return False, f"ZIP extraction error: {str(e)}"
 
 
 def extract_text_from_pdf(file_path: str) -> str:
@@ -95,7 +222,7 @@ def extract_text_from_pdf(file_path: str) -> str:
                         text += page_text + "\n"
             return text.strip()
         except Exception as e:
-            print(f"Error extracting PDF: {e}")
+            logger.error(f"Error extracting PDF: {e}", exc_info=True)
             return ""
 
 
@@ -107,7 +234,7 @@ def extract_text_from_docx(file_path: str) -> str:
         text = "\n".join([para.text for para in doc.paragraphs])
         return text.strip()
     except Exception as e:
-        print(f"Error extracting DOCX: {e}")
+        logger.error(f"Error extracting DOCX: {e}", exc_info=True)
         return ""
 
 
@@ -150,7 +277,7 @@ def score_candidate_resume(resume_text: str, job_requirements: Dict[str, Any]) -
         similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
         score = round(similarity * 100, 2)
     except Exception as e:
-        print(f"Error calculating score: {e}")
+        logger.error(f"Error calculating score: {e}", exc_info=True)
         score = 50.0  # Default score
     
     return {
@@ -159,19 +286,77 @@ def score_candidate_resume(resume_text: str, job_requirements: Dict[str, Any]) -
     }
 
 
+def validate_job_requirements(data: dict) -> tuple[bool, Optional[str]]:
+    """
+    Validate job requirements input
+
+    Args:
+        data: Dictionary containing job requirements
+
+    Returns:
+        tuple: (is_valid: bool, error_message: Optional[str])
+    """
+    required_fields = ['role', 'skills']
+
+    for field in required_fields:
+        if field not in data or not data[field] or not data[field].strip():
+            return False, f"'{field}' is required and cannot be empty"
+
+    # Validate role length
+    if len(data['role']) > 200:
+        return False, "Role description is too long (max 200 characters)"
+
+    # Validate skills
+    if len(data['skills']) > 500:
+        return False, "Skills list is too long (max 500 characters)"
+
+    # Validate additional requirements
+    if 'additional' in data and len(data.get('additional', '')) > 2000:
+        return False, "Additional requirements too long (max 2000 characters)"
+
+    return True, None
+
+
+def validate_github_username(username: str) -> tuple[bool, Optional[str]]:
+    """
+    Validate GitHub username format
+
+    Args:
+        username: GitHub username to validate
+
+    Returns:
+        tuple: (is_valid: bool, error_message: Optional[str])
+    """
+    import re
+
+    if not username or not username.strip():
+        return False, "GitHub username cannot be empty"
+
+    # GitHub username rules: 1-39 chars, alphanumeric and hyphens, cannot start/end with hyphen
+    pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$'
+
+    if not re.match(pattern, username):
+        return False, "Invalid GitHub username format"
+
+    if len(username) > 39:
+        return False, "GitHub username too long (max 39 characters)"
+
+    return True, None
+
+
 def extract_candidate_name(text: str, filename: str) -> str:
     """Extract candidate name from resume text or filename"""
     import re
-    
+
     # Try to find name in first few lines
     lines = [line.strip() for line in text.split('\n')[:10] if line.strip()]
-    
+
     # Common patterns for names
     name_patterns = [
         r'^\s*(?:name|full name|candidate name|candidate|applicant)\s*[:\-]\s*(.+)$',
         r'^\s*(?:resume of|cv of|curriculum vitae of)\s*[:\-]?\s*(.+)$',
     ]
-    
+
     for pattern in name_patterns:
         for line in lines:
             match = re.match(pattern, line, flags=re.I)
@@ -179,7 +364,7 @@ def extract_candidate_name(text: str, filename: str) -> str:
                 name = match.group(1).strip()
                 if len(name.split()) <= 5 and '@' not in name:
                     return name
-    
+
     # Fallback: use filename
     name = os.path.splitext(os.path.basename(filename))[0]
     name = name.replace('_', ' ').replace('-', ' ')
@@ -187,21 +372,58 @@ def extract_candidate_name(text: str, filename: str) -> str:
     return name
 
 
+def process_single_resume(resume_text: str, resume_filename: str, job_requirements: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Process a single resume and return candidate information
+
+    Args:
+        resume_text: Extracted text from resume
+        resume_filename: Original filename
+        job_requirements: Job requirements dict
+
+    Returns:
+        Dict with candidate info or None if processing failed
+    """
+    if not resume_text:
+        return None
+
+    candidate_name = extract_candidate_name(resume_text, resume_filename)
+    score_result = score_candidate_resume(resume_text, job_requirements)
+
+    # Extract skills from resume (simple keyword matching)
+    skills_list = [s.strip() for s in job_requirements.get('skills', '').split(',') if s.strip()]
+    found_skills = [skill for skill in skills_list
+                   if skill.lower() in resume_text.lower()]
+
+    return {
+        'name': candidate_name,
+        'score': score_result['score'],
+        'matchScore': score_result['score'],
+        'skills': found_skills,
+        'note': f"Matched {len(found_skills)}/{len(skills_list)} required skills",
+        'summary': f"Resume score: {score_result['score']}/100"
+    }
+
+
 # ============================================================================
 # API ENDPOINTS
 # ============================================================================
 
 @app.route('/api/health', methods=['GET'])
+@limiter.exempt  # Health check should not be rate limited
 def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'service': 'HireSight API'
+        'service': 'HireSight API',
+        'api_keys_enabled': API_KEYS_ENABLED
     })
 
 
 @app.route('/api/rank', methods=['POST'])
+@require_api_key
+@limiter.limit("10 per minute")  # Stricter limit for compute-intensive endpoint
 def rank_candidates():
     """
     Rank candidates based on uploaded resumes and job requirements
@@ -221,7 +443,7 @@ def rank_candidates():
         experience = request.form.get('experience', '')
         cgpa = request.form.get('cgpa', '')
         additional = request.form.get('additional', '')
-        
+
         job_requirements = {
             'role': role,
             'skills': skills,
@@ -229,6 +451,11 @@ def rank_candidates():
             'cgpa': cgpa,
             'additional': additional
         }
+
+        # Validate job requirements
+        is_valid, error_msg = validate_job_requirements(job_requirements)
+        if not is_valid:
+            return jsonify({'error': error_msg}), 400
         
         # Check if file was uploaded
         if 'file' not in request.files:
@@ -253,12 +480,19 @@ def rank_candidates():
         try:
             # Process based on file type
             if filename.endswith('.zip'):
-                # Extract zip file
+                # Extract zip file securely
                 extract_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"{timestamp}_extracted")
                 os.makedirs(extract_dir, exist_ok=True)
-                
-                with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                    zip_ref.extractall(extract_dir)
+
+                # Use secure extraction
+                success, error_msg = safe_extract_zip(file_path, extract_dir)
+                if not success:
+                    # Cleanup and return error
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    if os.path.exists(extract_dir):
+                        shutil.rmtree(extract_dir, ignore_errors=True)
+                    return jsonify({'error': error_msg}), 400
                 
                 # Process each file in the zip
                 for root, dirs, files in os.walk(extract_dir):
@@ -266,24 +500,10 @@ def rank_candidates():
                         if allowed_file(resume_file):
                             resume_path = os.path.join(root, resume_file)
                             resume_text = extract_text_from_file(resume_path)
-                            
-                            if resume_text:
-                                candidate_name = extract_candidate_name(resume_text, resume_file)
-                                score_result = score_candidate_resume(resume_text, job_requirements)
-                                
-                                # Extract skills from resume (simple keyword matching)
-                                skills_list = [s.strip() for s in skills.split(',') if s.strip()]
-                                found_skills = [skill for skill in skills_list 
-                                               if skill.lower() in resume_text.lower()]
-                                
-                                candidates.append({
-                                    'name': candidate_name,
-                                    'score': score_result['score'],
-                                    'matchScore': score_result['score'],
-                                    'skills': found_skills,
-                                    'note': f"Matched {len(found_skills)}/{len(skills_list)} required skills",
-                                    'summary': f"Resume score: {score_result['score']}/100"
-                                })
+
+                            candidate_data = process_single_resume(resume_text, resume_file, job_requirements)
+                            if candidate_data:
+                                candidates.append(candidate_data)
                 
                 # Cleanup extracted directory
                 shutil.rmtree(extract_dir, ignore_errors=True)
@@ -291,23 +511,10 @@ def rank_candidates():
             else:
                 # Process single resume file
                 resume_text = extract_text_from_file(file_path)
-                
-                if resume_text:
-                    candidate_name = extract_candidate_name(resume_text, filename)
-                    score_result = score_candidate_resume(resume_text, job_requirements)
-                    
-                    skills_list = [s.strip() for s in skills.split(',') if s.strip()]
-                    found_skills = [skill for skill in skills_list 
-                                   if skill.lower() in resume_text.lower()]
-                    
-                    candidates.append({
-                        'name': candidate_name,
-                        'score': score_result['score'],
-                        'matchScore': score_result['score'],
-                        'skills': found_skills,
-                        'note': f"Matched {len(found_skills)}/{len(skills_list)} required skills",
-                        'summary': f"Resume score: {score_result['score']}/100"
-                    })
+
+                candidate_data = process_single_resume(resume_text, filename, job_requirements)
+                if candidate_data:
+                    candidates.append(candidate_data)
             
             # Sort candidates by score (descending)
             candidates.sort(key=lambda x: x['score'], reverse=True)
@@ -336,6 +543,8 @@ def rank_candidates():
 
 
 @app.route('/api/github/analyze', methods=['POST'])
+@require_api_key
+@limiter.limit("20 per minute")
 def analyze_github():
     """
     Analyze a GitHub profile
@@ -352,11 +561,17 @@ def analyze_github():
     """
     try:
         data = request.get_json()
-        
+
         if not data or 'username' not in data:
             return jsonify({'error': 'GitHub username is required'}), 400
-        
+
         username = data['username']
+
+        # Validate GitHub username
+        is_valid, error_msg = validate_github_username(username)
+        if not is_valid:
+            return jsonify({'error': error_msg}), 400
+
         job_requirements = data.get('job_requirements', {})
         
         # Get GitHub token from environment
@@ -402,6 +617,8 @@ def analyze_github():
 
 
 @app.route('/api/interview/generate', methods=['POST'])
+@require_api_key
+@limiter.limit("5 per minute")  # Very strict - uses paid Gemini API
 def generate_interview_questions():
     """
     Generate personalized interview questions
@@ -428,7 +645,14 @@ def generate_interview_questions():
             return jsonify({'error': 'Candidate profile text is required'}), 400
         
         # Get API key from request or environment
-        api_key = data.get('api_key') or os.environ.get('GEMINI_API_KEY', 'AIzaSyDg73KGgHkLntpyI_S9Dbho93zfu4EJOxg')
+        api_key = data.get('api_key') or os.environ.get('GEMINI_API_KEY')
+
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'error': 'Gemini API key is required. Set GEMINI_API_KEY environment variable.'
+            }), 401
+
         model = "gemini-2.0-flash-exp"
         
         # Prepare prompt
@@ -482,6 +706,7 @@ Profile:
 
 
 @app.route('/api/leaderboard', methods=['POST'])
+@require_api_key
 def generate_leaderboard():
     """
     Generate leaderboard combining LinkedIn and GitHub scores
@@ -554,6 +779,8 @@ def generate_leaderboard():
 
 
 @app.route('/api/analyze', methods=['POST'])
+@require_api_key
+@limiter.limit("15 per minute")
 def analyze_resume():
     """
     Analyze a single resume and return detailed scores
@@ -647,21 +874,21 @@ def analyze_resume():
 # ============================================================================
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("🚀 HireSight Unified API Server")
-    print("=" * 60)
-    print(f"📁 Upload folder: {UPLOAD_FOLDER}")
-    print(f"📊 Max file size: {MAX_FILE_SIZE / (1024*1024):.1f} MB")
-    print(f"✅ Allowed extensions: {', '.join(ALLOWED_EXTENSIONS)}")
-    print("=" * 60)
-    print("\nAvailable endpoints:")
-    print("  GET  /api/health - Health check")
-    print("  POST /api/rank - Rank candidates from resumes")
-    print("  POST /api/analyze - Analyze single resume")
-    print("  POST /api/github/analyze - Analyze GitHub profile")
-    print("  POST /api/interview/generate - Generate interview questions")
-    print("  POST /api/leaderboard - Generate combined leaderboard")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("🚀 HireSight Unified API Server")
+    logger.info("=" * 60)
+    logger.info(f"📁 Upload folder: {UPLOAD_FOLDER}")
+    logger.info(f"📊 Max file size: {MAX_FILE_SIZE / (1024*1024):.1f} MB")
+    logger.info(f"✅ Allowed extensions: {', '.join(ALLOWED_EXTENSIONS)}")
+    logger.info("=" * 60)
+    logger.info("\nAvailable endpoints:")
+    logger.info("  GET  /api/health - Health check")
+    logger.info("  POST /api/rank - Rank candidates from resumes")
+    logger.info("  POST /api/analyze - Analyze single resume")
+    logger.info("  POST /api/github/analyze - Analyze GitHub profile")
+    logger.info("  POST /api/interview/generate - Generate interview questions")
+    logger.info("  POST /api/leaderboard - Generate combined leaderboard")
+    logger.info("=" * 60)
     
     # Run server
     port = int(os.environ.get('PORT', 5000))
