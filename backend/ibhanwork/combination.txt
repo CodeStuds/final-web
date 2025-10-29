@@ -1,0 +1,1 @@
+fromt the data entered in the COMPANY_MAINPAGE it compines it all into one single job description desc.txt
