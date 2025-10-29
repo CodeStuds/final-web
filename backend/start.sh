@@ -56,9 +56,11 @@ export PORT=5000
 
 echo ""
 echo "=========================================="
-echo "🎯 Starting HireSight API Server"
+echo "🎯 Starting HireSight Server"
 echo "=========================================="
 echo "📍 Server will run at: http://localhost:5000"
+echo "🌐 Frontend: http://localhost:5000/"
+echo "🔌 API: http://localhost:5000/api/"
 echo "📖 API Documentation: See README.md"
 echo "⏹️  Press Ctrl+C to stop the server"
 echo "=========================================="

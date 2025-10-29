@@ -62,7 +62,9 @@ except ImportError:
 
 
 # Configuration
-app = Flask(__name__)
+# Set up Flask to serve frontend static files
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'DEVANGSHU_FRONTEND')
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 CORS(app)  # Enable CORS for frontend communication
 
 # Setup rate limiting
@@ -419,6 +421,45 @@ def health_check():
         'service': 'HireSight API',
         'api_keys_enabled': API_KEYS_ENABLED
     })
+
+
+# ============================================================================
+# FRONTEND ROUTES
+# ============================================================================
+
+@app.route('/')
+@limiter.exempt
+def home():
+    """Serve the homepage"""
+    return app.send_static_file('HIRESIGHT_HOME_PAGE/index.html')
+
+
+@app.route('/company/register')
+@limiter.exempt
+def company_register():
+    """Serve company registration page"""
+    return app.send_static_file('COMPANY_REGISTRATION/index.html')
+
+
+@app.route('/company/login')
+@limiter.exempt
+def company_login():
+    """Serve company login page"""
+    return app.send_static_file('COMPANY_LOGIN/index.html')
+
+
+@app.route('/company/dashboard')
+@limiter.exempt
+def company_dashboard():
+    """Serve company main page"""
+    return app.send_static_file('COMPANY_MAIN_PAGE/index.html')
+
+
+@app.route('/candidate/signup')
+@limiter.exempt
+def candidate_signup():
+    """Serve candidate signup page"""
+    return app.send_static_file('CANDIDATE_SIGNUP/index.html')
 
 
 @app.route('/api/rank', methods=['POST'])
@@ -870,6 +911,22 @@ def analyze_resume():
 
 
 # ============================================================================
+# CATCH-ALL ROUTE FOR STATIC FILES
+# ============================================================================
+
+@app.route('/<path:path>')
+@limiter.exempt
+def serve_static(path):
+    """Serve static files (CSS, JS, images) - Must be last route"""
+    try:
+        return app.send_static_file(path)
+    except Exception as e:
+        # If file not found, return 404
+        logger.debug(f"Static file not found: {path}")
+        return jsonify({'error': 'File not found'}), 404
+
+
+# ============================================================================
 # MAIN
 # ============================================================================
 
@@ -880,8 +937,15 @@ if __name__ == '__main__':
     logger.info(f"📁 Upload folder: {UPLOAD_FOLDER}")
     logger.info(f"📊 Max file size: {MAX_FILE_SIZE / (1024*1024):.1f} MB")
     logger.info(f"✅ Allowed extensions: {', '.join(ALLOWED_EXTENSIONS)}")
+    logger.info(f"🌐 Serving frontend from: {FRONTEND_DIR}")
     logger.info("=" * 60)
-    logger.info("\nAvailable endpoints:")
+    logger.info("\nFrontend routes:")
+    logger.info("  GET  / - Homepage")
+    logger.info("  GET  /company/register - Company registration")
+    logger.info("  GET  /company/login - Company login")
+    logger.info("  GET  /company/dashboard - Company dashboard")
+    logger.info("  GET  /candidate/signup - Candidate signup")
+    logger.info("\nAPI endpoints:")
     logger.info("  GET  /api/health - Health check")
     logger.info("  POST /api/rank - Rank candidates from resumes")
     logger.info("  POST /api/analyze - Analyze single resume")
@@ -889,9 +953,9 @@ if __name__ == '__main__':
     logger.info("  POST /api/interview/generate - Generate interview questions")
     logger.info("  POST /api/leaderboard - Generate combined leaderboard")
     logger.info("=" * 60)
-    
+
     # Run server
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('DEBUG', 'False').lower() == 'true'
-    
+
     app.run(host='0.0.0.0', port=port, debug=debug)

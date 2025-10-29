@@ -2,21 +2,16 @@
 // 🔐 CONFIGURATION
 // ===============================
 
-// API Configuration - Uses environment variables when available
-// For local development, defaults to localhost
-// For production, set window.ENV.API_BASE_URL and window.ENV.API_KEY
-const API_BASE_URL = window.ENV?.API_BASE_URL || "http://localhost:5000/api";
-const API_KEY = window.ENV?.API_KEY || ""; // Optional: API key for authenticated requests
+// Note: API configuration is now loaded from ../api-config.js
+// Make sure to include <script src="../api-config.js"></script> before this script in HTML
 
-// Helper function to add API key to requests
-function getHeaders() {
-  const headers = {
-    'Content-Type': 'application/json'
+// Fallback configuration if api-config.js is not loaded
+if (typeof HireSightAPI === 'undefined') {
+  console.warn('API config not loaded, using fallback configuration');
+  window.HIRESIGHT_API_CONFIG = {
+    baseURL: window.ENV?.API_BASE_URL || "http://localhost:5000/api",
+    apiKey: window.ENV?.API_KEY || ""
   };
-  if (API_KEY) {
-    headers['X-API-Key'] = API_KEY;
-  }
-  return headers;
 }
 
 
@@ -78,21 +73,42 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function fetchRank(formData) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000); // Increased timeout
     try {
-      const res = await fetch(`${API_BASE_URL}/rank`, { 
-        method: 'POST', 
-        body: formData, 
-        signal: controller.signal 
-      });
-      clearTimeout(timeout);
-      if (!res.ok) throw new Error('backend error');
-      const json = await res.json();
-      if (!json || !Array.isArray(json.results) || json.results.length === 0) throw new Error('empty results');
-      return { data: json.results, source: 'backend' };
+      // Use the new API service if available
+      if (typeof HireSightAPI !== 'undefined' && HireSightAPI.rankCandidates) {
+        const json = await HireSightAPI.rankCandidates(formData);
+        if (!json.success || !Array.isArray(json.results) || json.results.length === 0) {
+          throw new Error(json.error || 'No results returned');
+        }
+        return { data: json.results, source: 'backend', count: json.count };
+      } else {
+        // Fallback to direct fetch
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        try {
+          const res = await fetch(`${HIRESIGHT_API_CONFIG.baseURL}/rank`, {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal,
+            headers: HIRESIGHT_API_CONFIG.apiKey ? { 'X-API-Key': HIRESIGHT_API_CONFIG.apiKey } : {}
+          });
+          clearTimeout(timeout);
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Backend error');
+          }
+          const json = await res.json();
+          if (!json || !Array.isArray(json.results) || json.results.length === 0) {
+            throw new Error('No results returned');
+          }
+          return { data: json.results, source: 'backend', count: json.count };
+        } catch (err) {
+          clearTimeout(timeout);
+          throw err;
+        }
+      }
     } catch (err) {
-      clearTimeout(timeout);
+      console.error('Fetch rank error:', err);
       throw err;
     }
   }
@@ -112,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsEl.innerHTML = '';
     const header = document.createElement('div');
     header.className = 'results-header';
-    header.innerHTML = `<strong>Ranking (${items.length})</strong>
-                        <span class="meta">${meta.source ? 'Source: ' + meta.source : ''} ${meta.fallback ? '(fallback used)' : ''}</span>`;
+    header.innerHTML = `<strong>Candidate Ranking (${items.length} candidates)</strong>
+                        <span class="meta">${meta.source ? 'Source: ' + meta.source : ''} ${meta.fallback ? '⚠️ Fallback data used' : '✓ Live results'}</span>`;
     resultsEl.appendChild(header);
 
     const list = document.createElement('div');
@@ -121,17 +137,56 @@ document.addEventListener('DOMContentLoaded', () => {
     items.forEach((it, idx) => {
       const card = document.createElement('div');
       card.className = 'result-card';
+      const skillsList = (it.skills || []).slice(0, 4).join(', ');
+      const hasMoreSkills = (it.skills || []).length > 4;
+
       card.innerHTML = `
         <div class="rank">#${idx + 1}</div>
         <div class="info">
           <div class="name">${it.name || it.candidate || 'Candidate ' + (idx+1)}</div>
-          <div class="meta-line">Score: <strong>${it.score ?? it.matchScore ?? '—'}</strong> • ${(it.skills||[]).slice(0,4).join(', ')}</div>
+          <div class="meta-line">
+            Score: <strong>${it.score ?? it.matchScore ?? '—'}</strong>
+            ${skillsList ? '• ' + skillsList : ''}
+            ${hasMoreSkills ? ` (+${(it.skills || []).length - 4} more)` : ''}
+          </div>
           <div class="note">${it.note || it.summary || ''}</div>
+        </div>
+        <div class="actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="action-btn github-btn" data-candidate="${it.name || 'Candidate ' + (idx+1)}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+            Analyze GitHub
+          </button>
+          <button class="action-btn interview-btn" data-candidate="${it.name || 'Candidate ' + (idx+1)}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+            Generate Questions
+          </button>
         </div>
       `;
       list.appendChild(card);
     });
     resultsEl.appendChild(list);
+
+    // Add event listeners for action buttons
+    attachActionListeners();
+  }
+
+  function attachActionListeners() {
+    // GitHub analysis buttons
+    document.querySelectorAll('.github-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const candidateName = e.target.getAttribute('data-candidate');
+        const username = prompt(`Enter GitHub username for ${candidateName}:`);
+        if (username) {
+          await analyzeGitHubProfile(username, candidateName);
+        }
+      });
+    });
+
+    // Interview question buttons
+    document.querySelectorAll('.interview-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const candidateName = e.target.getAttribute('data-candidate');
+        await generateInterviewQuestions(candidateName);
+      });
+    });
   }
 
   if (submitBtn) {
@@ -171,9 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         const res = await fetchRank(formData);
-        renderResults(res.data, { source: 'backend' });
+        renderResults(res.data, { source: 'backend', count: res.count });
+
+        // Show success message
+        showNotification('✓ Candidates ranked successfully!', 'success');
       } catch (err) {
         console.warn('Backend unavailable, using fallback:', err);
+        showNotification(`⚠️ API unavailable: ${err.message}. Showing sample data.`, 'warning');
         const fallback = mockDataset();
         renderResults(fallback, { source: 'mock', fallback: true });
       } finally {
@@ -183,6 +242,225 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ===============================
+// 🔔 NOTIFICATION HELPER
+// ===============================
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    background: ${type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : type === 'error' ? '#ef4444' : '#3b82f6'};
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    animation: slideIn 0.3s ease-out;
+    max-width: 400px;
+  `;
+  notification.textContent = message;
+
+  document.body.appendChild(notification);
+
+  // Remove after 5 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// ===============================
+// 🐙 GITHUB ANALYSIS
+// ===============================
+async function analyzeGitHubProfile(username, candidateName) {
+  try {
+    showNotification(`Analyzing GitHub profile for ${username}...`, 'info');
+
+    // Use API service
+    if (typeof HireSightAPI !== 'undefined' && HireSightAPI.analyzeGitHub) {
+      const result = await HireSightAPI.analyzeGitHub(username);
+
+      if (result.success) {
+        // Display results in a modal or new section
+        displayGitHubAnalysis(candidateName, username, result.analysis, result.match_score);
+        showNotification(`✓ GitHub analysis complete for ${username}`, 'success');
+      } else {
+        throw new Error(result.error || 'Analysis failed');
+      }
+    } else {
+      throw new Error('API service not available');
+    }
+  } catch (error) {
+    console.error('GitHub analysis error:', error);
+    showNotification(`✗ Failed to analyze GitHub profile: ${error.message}`, 'error');
+  }
+}
+
+function displayGitHubAnalysis(candidateName, username, analysis, matchScore) {
+  // Create modal for displaying results
+  const modal = document.createElement('div');
+  modal.className = 'analysis-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+  `;
+
+  const modalContent = document.createElement('div');
+  modalContent.style.cssText = `
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+  `;
+
+  modalContent.innerHTML = `
+    <button class="close-modal" style="position: absolute; top: 1rem; right: 1rem; background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">✕ Close</button>
+    <h2 style="margin-bottom: 1rem;">GitHub Analysis: ${candidateName}</h2>
+    <p style="margin-bottom: 1rem;"><strong>Username:</strong> <a href="https://github.com/${username}" target="_blank" style="color: #3b82f6;">${username}</a></p>
+    ${matchScore !== null && matchScore !== undefined ? `<p style="margin-bottom: 1rem;"><strong>Match Score:</strong> ${matchScore}/100</p>` : ''}
+    <div style="margin-top: 1.5rem;">
+      <h3 style="margin-bottom: 0.5rem;">Analysis Results:</h3>
+      <pre style="background: #f3f4f6; padding: 1rem; border-radius: 6px; overflow-x: auto; white-space: pre-wrap;">${JSON.stringify(analysis, null, 2)}</pre>
+    </div>
+  `;
+
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+
+  // Close modal on click
+  modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+}
+
+// ===============================
+// 💼 INTERVIEW QUESTION GENERATION
+// ===============================
+async function generateInterviewQuestions(candidateName) {
+  try {
+    // Prompt for candidate profile or GitHub username
+    const profileSource = confirm('Do you want to use GitHub profile? Click OK for GitHub, Cancel to enter profile text manually.');
+
+    let candidateProfile = '';
+
+    if (profileSource) {
+      // Get from GitHub
+      const username = prompt(`Enter GitHub username for ${candidateName}:`);
+      if (!username) return;
+
+      showNotification(`Fetching GitHub profile for ${username}...`, 'info');
+
+      if (typeof HireSightAPI !== 'undefined' && HireSightAPI.analyzeGitHub) {
+        const result = await HireSightAPI.analyzeGitHub(username);
+        if (result.success) {
+          candidateProfile = JSON.stringify(result.analysis);
+        } else {
+          throw new Error('Failed to fetch GitHub profile');
+        }
+      }
+    } else {
+      // Manual entry
+      candidateProfile = prompt('Enter candidate profile (skills, experience, projects):');
+      if (!candidateProfile) return;
+    }
+
+    showNotification(`Generating interview questions for ${candidateName}...`, 'info');
+
+    // Generate questions
+    if (typeof HireSightAPI !== 'undefined' && HireSightAPI.generateInterviewQuestions) {
+      const result = await HireSightAPI.generateInterviewQuestions(candidateName, candidateProfile);
+
+      if (result.success) {
+        displayInterviewQuestions(candidateName, result.interview_questions);
+        showNotification(`✓ Interview questions generated for ${candidateName}`, 'success');
+      } else {
+        throw new Error(result.error || 'Question generation failed');
+      }
+    } else {
+      throw new Error('API service not available');
+    }
+  } catch (error) {
+    console.error('Interview generation error:', error);
+    showNotification(`✗ Failed to generate questions: ${error.message}`, 'error');
+  }
+}
+
+function displayInterviewQuestions(candidateName, questions) {
+  // Create modal for displaying questions
+  const modal = document.createElement('div');
+  modal.className = 'questions-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+  `;
+
+  const modalContent = document.createElement('div');
+  modalContent.style.cssText = `
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+  `;
+
+  modalContent.innerHTML = `
+    <button class="close-modal" style="position: absolute; top: 1rem; right: 1rem; background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;">✕ Close</button>
+    <h2 style="margin-bottom: 1rem;">Interview Questions: ${candidateName}</h2>
+    <div style="margin-top: 1.5rem; line-height: 1.8;">
+      <pre style="white-space: pre-wrap; font-family: inherit;">${questions}</pre>
+    </div>
+    <button class="copy-btn" style="margin-top: 1.5rem; background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer;">Copy to Clipboard</button>
+  `;
+
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+
+  // Close modal
+  modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  // Copy to clipboard
+  modal.querySelector('.copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(questions).then(() => {
+      showNotification('✓ Copied to clipboard!', 'success');
+    }).catch(err => {
+      console.error('Copy failed:', err);
+      showNotification('✗ Failed to copy', 'error');
+    });
+  });
+}
 
 // ===============================
 // 🎯 DOM ELEMENTS
@@ -236,24 +514,38 @@ function updateScoreUI(scores) {
 // ===============================
 async function getResumeScore(file) {
   try {
-    // Prepare form data
-    const formData = new FormData();
-    formData.append("resume", file);
+    let data;
 
-    // Call your backend API
-    const response = await fetch(`${API_BASE_URL}/analyze`, {
-      method: "POST",
-      body: formData,
-    });
+    // Use the new API service if available
+    if (typeof HireSightAPI !== 'undefined' && HireSightAPI.analyzeResume) {
+      const result = await HireSightAPI.analyzeResume(file);
+      if (result.success) {
+        data = result;
+      } else {
+        throw new Error(result.error || 'Analysis failed');
+      }
+    } else {
+      // Fallback to direct fetch
+      const formData = new FormData();
+      formData.append("resume", file);
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      const response = await fetch(`${HIRESIGHT_API_CONFIG.baseURL}/analyze`, {
+        method: "POST",
+        body: formData,
+        headers: HIRESIGHT_API_CONFIG.apiKey ? { 'X-API-Key': HIRESIGHT_API_CONFIG.apiKey } : {}
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API Error: ${response.statusText}`);
+      }
+
+      data = await response.json();
     }
-
-    const data = await response.json();
 
     // Expected response structure:
     // {
+    //   success: true,
     //   mainScore: 84,
     //   keywordScore: 78,
     //   achievementScore: 88,
@@ -262,10 +554,12 @@ async function getResumeScore(file) {
     // }
 
     updateScoreUI(data);
+    showNotification('✓ Resume analyzed successfully!', 'success');
 
   } catch (error) {
     console.error("❌ Resume analysis failed:", error);
-    alert("Something went wrong while analyzing your resume. Please try again.");
+    showNotification(`✗ Resume analysis failed: ${error.message}`, 'error');
+    throw error;
   }
 }
 
