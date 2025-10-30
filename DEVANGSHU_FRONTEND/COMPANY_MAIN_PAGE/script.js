@@ -24,6 +24,23 @@ const closeLeaderboardBtn = document.getElementById("closeLeaderboard");
 const logoutBtn = document.getElementById("logoutBtn");
 
 // -----------------------------
+// AUTH GUARD (redirect if not logged in)
+// -----------------------------
+(async () => {
+  try {
+    if (typeof checkAuth === 'function') {
+      const session = await checkAuth();
+      if (!session) {
+        // Not authenticated; send to login
+        window.location.href = '/COMPANY_LOGIN/index.html';
+      }
+    }
+  } catch (err) {
+    console.warn('Auth check failed:', err);
+  }
+})();
+
+// -----------------------------
 // CGPA SLIDER TOGGLE
 // -----------------------------
 function toggleCGPASlider() {
@@ -1596,8 +1613,29 @@ function downloadQuestions(index, candidateName, evt) {
 }
 
 // -----------------------------
-// LOGOUT BUTTON (Placeholder)
+// LOGOUT BUTTON (Supabase)
 // -----------------------------
-logoutBtn.addEventListener("click", () => {
-  alert("You have been logged out (placeholder). Implement backend logout logic here.");
+logoutBtn.addEventListener("click", async () => {
+  if (!window.supabase || typeof signOut !== 'function') {
+    // Fallback if supabase isn't loaded for any reason
+    console.warn('Supabase not initialized; redirecting to login as fallback.');
+    window.location.href = '/COMPANY_LOGIN/index.html';
+    return;
+  }
+
+  const originalText = logoutBtn.textContent;
+  logoutBtn.disabled = true;
+  logoutBtn.textContent = 'Logging out…';
+
+  try {
+    const ok = await signOut();
+    if (!ok) throw new Error('Sign out failed');
+    // Redirect to login after successful sign out
+    window.location.href = '/COMPANY_LOGIN/index.html';
+  } catch (e) {
+    console.error('Logout error:', e);
+    alert('Failed to log out. Please try again.');
+    logoutBtn.disabled = false;
+    logoutBtn.textContent = originalText;
+  }
 });
