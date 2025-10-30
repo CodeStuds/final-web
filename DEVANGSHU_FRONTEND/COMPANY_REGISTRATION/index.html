@@ -1,0 +1,78 @@
+<html>
+<head>
+    <title>Company Registration</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/COMPANY_REGISTRATION/style.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/supabase-config.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Left Section (Video + Quote) -->
+    <div class="left-section">
+      <div class="overlay"></div>
+
+      <!-- 🎥 Replaced image with video -->
+      <video autoplay muted loop playsinline class="bg-video">
+        <source src="/COMPANY_REGISTRATION/video.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <!-- Right Section (Login Form) -->
+    <div class="right-section">
+      <h1>Hire Right. HireSight!</h1>
+
+      <form id="companyForm">
+        <label for="companyName">Company Name</label>
+        <input type="text" id="companyName" placeholder="Input company name" required />
+
+        <label for="goal">Company Goal</label>
+        <input type="text" id="goal" placeholder="Input company goal" required />
+
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Input email" required />
+
+        <div class="password-container">
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input type="password" id="password" placeholder="Enter your password" />
+            <span class="toggle" id="togglePassword">👁️</span>
+          </div>
+
+          <div class="options">
+            <label><input type="checkbox" id="remember" /> Remember me</label>
+            <a href="#">Forgot your password?</a>
+          </div>
+        </div>
+
+        <label for="description">What your Company Does?</label>
+        <input type="text" id="description" placeholder="Input company description" required />
+        <button type="submit" class="login-btn">REGISTER</button>
+      </form>
+
+      <div class="divider">Or</div>
+
+      <div class="social-login">
+        <button class="google">
+          <img src="/COMPANY_REGISTRATION/google.jpg" alt="Google logo" class="social-icon">
+          Sign up with Google
+        </button>
+        <button class="apple">
+          <img src="/COMPANY_REGISTRATION/apple.png" alt="Apple logo" class="social-icon">
+          Sign up with Apple
+        </button>
+        <button class="facebook">
+          <img src="/COMPANY_REGISTRATION/facebook.png" alt="Facebook logo" class="social-icon">
+          Sign up with Facebook
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/COMPANY_REGISTRATION/script.js" defer></script>
+</body>
+</html>
+

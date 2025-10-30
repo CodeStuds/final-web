@@ -1,0 +1,377 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  display: flex;
+  height: 100vh;
+  background-color: #fff;
+}
+
+/* ---------------- Container ---------------- */
+.container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------------- LEFT SECTION ---------------- */
+.left-section {
+  flex: 1.3;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.bg-img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.quote {
+  position: relative;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  text-align: center;
+  padding: 1.2rem;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.8px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* ---------------- RIGHT SECTION (Glass Form Area) ---------------- */
+.right-section {
+  flex: 1;
+  padding: 5rem 6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  width: 55%;
+  margin-left: -4%;
+  /* allow children to show and avoid negative offset hiding content */
+  overflow: visible;
+  z-index: 5;
+  width: auto;        /* avoid forcing a narrow width that could clip content */
+  max-width: 720px;
+  margin-left: 0;     /* remove negative offset that may push content off-screen */
+}
+
+.right-section h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.3;
+}
+
+.right-section .subtext {
+  color: #555;
+  margin-top: 0.8rem;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* ---------------- FORM FIELDS ---------------- */
+form {
+  width: 100%;
+}
+
+form label {
+  font-weight: 600;
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #111;
+}
+
+/* unified field styling applied to all inputs/textareas/selects */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  border-radius: 10px;
+  border: 1.4px solid #ccc;
+  outline: none;
+  margin-bottom: 1.3rem;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+}
+
+/* focus state for all unified fields */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+  border-color: #000;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* keep password container layout, but only adjust the extra right padding for icon */
+.password-container {
+  width: 100%;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* keep same visual style as other fields but preserve extra right padding for the toggle icon */
+.password-field input {
+  width: 100%;
+  padding-right: 40px; /* extra space for the eye icon */
+  border-radius: 10px;
+  border: 1.4px solid #ccc;
+  font-size: 1rem;
+  outline: none;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.25s ease;
+  box-sizing: border-box;
+}
+
+.toggle {
+  position: absolute;
+  right: 12px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.toggle:hover {
+  color: #000;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.options a {
+  text-decoration: none;
+  color: #000;
+  font-weight: 500;
+}
+
+.options a:hover {
+  text-decoration: underline;
+}
+
+
+/* ---------------- OPTIONS ---------------- */
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  color: #444;
+}
+
+.options a {
+  color: #000;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.options a:hover {
+  text-decoration: underline;
+}
+
+/* ---------------- BUTTON ---------------- */
+.login-btn {
+  width: 100%;
+  background: #0b1d0b;
+  color: #fff;
+  border: none;
+  padding: 1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.login-btn:hover {
+  background: #143614;
+}
+
+/* ---------------- DIVIDER ---------------- */
+.divider {
+  text-align: center;
+  margin: 1.8rem 0;
+  color: #888;
+  position: relative;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  position: absolute;
+  width: 45%;
+  height: 1px;
+  background: #ddd;
+  top: 50%;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+/* ---------------- SOCIAL BUTTONS (COMPACT & AESTHETIC) ---------------- */
+.social-login {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  align-items: center;
+  justify-content: center; /* center-align inside the form */
+  flex-wrap: wrap;
+  width: 100%;
+  z-index: 10;        /* keep buttons above other layers */
+}
+
+.social-login button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.35rem 0.65rem; /* compressed length */
+  height: 38px;
+  min-width: 110px; /* shorter, compact buttons */
+  border-radius: 999px; /* pill shape */
+  border: 1px solid #000; /* default black border for social tablets */
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.02));
+  box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+  justify-content: center;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* icon */
+.social-login img.social-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  filter: none !important;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+/* keep label spacing consistent when using plain text inside button */
+.social-login button > span,
+.social-login button > img + * {
+  line-height: 1;
+}
+
+/* Color variants */
+.google {
+  background: #fff;
+  color: #111;
+  border: 1px solid #e6e6e6;
+}
+
+.apple {
+  background: #000 !important;
+  color: #fff !important;
+  border: 1px solid #000 !important;
+}
+
+.facebook {
+  background: #1877f2 !important;
+  color: #fff !important;
+  border: 1px solid #000 !important;
+}
+
+/* Hover / active states */
+.social-login button:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+}
+
+.social-login button:active {
+  transform: translateY(0) scale(0.995);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  opacity: 0.98;
+}
+
+/* Responsive: hide labels on very small widths and make compact */
+@media (max-width: 420px) {
+  .social-login {
+    gap: 0.5rem;
+  }
+  .social-login button {
+    min-width: 44px;
+    padding: 0.32rem;
+    justify-content: center;
+  }
+  .social-login button span {
+    display: none;
+  }
+  .social-login img.social-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+  }
+}
+
+.bg-video {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}

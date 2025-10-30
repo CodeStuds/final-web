@@ -1,0 +1,10 @@
+# No additional dependencies needed beyond what's already in the parent projects
+# The leaderboard system uses only Python standard library
+
+# If you want to run this standalone, you may need:
+# (These are already in ../ibhanwork and ../github-data-fetch)
+
+# For potential future enhancements:
+# pandas>=1.3.0          # For advanced data manipulation
+# matplotlib>=3.4.0      # For visualization
+# seaborn>=0.11.0        # For enhanced plots

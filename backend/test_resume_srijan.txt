@@ -1,0 +1,41 @@
+Srijan Guchhait
+Software Engineer
+
+SUMMARY:
+Experienced full-stack developer with expertise in web technologies, backend systems, and cloud infrastructure. 
+Passionate about building scalable applications and contributing to open-source projects.
+
+SKILLS:
+- Programming Languages: Python, JavaScript, TypeScript, Java, C++
+- Web Technologies: React, Node.js, Express, Django, Flask
+- Databases: PostgreSQL, MongoDB, Redis, MySQL
+- DevOps: Docker, Kubernetes, AWS, CI/CD
+- Tools: Git, Linux, VS Code
+
+CONTACT INFORMATION:
+Email: srijan.guchhait@example.com
+Phone: +91 98765 43210
+GitHub: https://github.com/qwertystars
+LinkedIn: https://www.linkedin.com/in/srijan-guchhait/
+Portfolio: https://srijan.dev
+
+EXPERIENCE:
+Senior Software Engineer | Tech Company | 2020 - Present
+- Developed and maintained microservices architecture
+- Led team of 5 developers on critical projects
+- Implemented CI/CD pipelines reducing deployment time by 60%
+
+Software Developer | Startup Inc | 2018 - 2020
+- Built full-stack web applications using React and Node.js
+- Optimized database queries improving performance by 40%
+- Collaborated with cross-functional teams
+
+EDUCATION:
+Bachelor of Technology in Computer Science
+Indian Institute of Technology | 2014 - 2018
+CGPA: 8.5/10
+
+PROJECTS:
+- Open Source Contributions: Active contributor to several popular repositories
+- Personal Portfolio: Built with React and hosted on AWS
+- API Gateway: Designed and implemented microservices gateway

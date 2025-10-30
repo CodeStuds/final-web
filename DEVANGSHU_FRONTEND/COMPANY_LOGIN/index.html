@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HireSight | Login</title>
+  <link rel="stylesheet" href="/COMPANY_LOGIN/style.css" />
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/supabase-config.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Left Section (Video + Quote) -->
+    <div class="left-section">
+      <div class="overlay"></div>
+
+      <!-- 🎥 Replaced image with video -->
+      <video autoplay muted loop playsinline class="bg-video">
+        <source src="/COMPANY_LOGIN/video.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+
+    <!-- Right Section (Login Form) -->
+    <div class="right-section">
+      <h1>Hire Right. HireSight!</h1>
+
+      <form id="loginForm">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Input email" required />
+
+        <div class="password-container">
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input type="password" id="password" placeholder="Enter your password" />
+            <span class="toggle" id="togglePassword">👁️</span>
+          </div>
+
+          <div class="options">
+            <label><input type="checkbox" id="remember" /> Remember me</label>
+            <a href="#">Forgot your password?</a>
+          </div>
+        </div>
+
+
+        <button type="submit" class="login-btn">Login</button>
+      </form>
+
+      <div class="divider">Or</div>
+
+      <div class="social-login">
+        <button class="google">
+          <img src="/COMPANY_LOGIN/google.jpg" alt="Google logo" class="social-icon">
+          Sign in with Google
+        </button>
+        <button class="apple">
+          <img src="/COMPANY_LOGIN/apple.png" alt="Apple logo" class="social-icon">
+          Sign in with Apple
+        </button>
+        <button class="facebook">
+          <img src="/COMPANY_LOGIN/facebook.png" alt="Facebook logo" class="social-icon">
+          Sign in with Facebook
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/COMPANY_LOGIN/script.js" defer></script>
+</body>
+</html>

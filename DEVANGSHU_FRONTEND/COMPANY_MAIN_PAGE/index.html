@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hiring Platform | Create Job Posting</title>
+  <link rel="stylesheet" href="/COMPANY_MAIN_PAGE/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo">
+        <span><img src="/COMPANY_MAIN_PAGE/logo.jpg" alt="HireSight Logo" /></span>
+        <h1>HireSight | Create Job Posting</h1>
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+
+  </header>
+
+  <main class="main-container">
+    <section class="form-card" id="formCard">
+      <h2>Create a job posting</h2>
+      <p class="subtitle">Tell us about the role you're hiring for</p>
+
+      <div class="panel">
+        <div class="attributes">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>What role are you hiring for?</label>
+              <input type="text" placeholder="e.g., Senior Software Engineer" />
+            </div>
+            <div class="form-group">
+              <label>What skills are mandatory?</label>
+              <input type="text" placeholder="e.g., React, TypeScript, Node.js" />
+            </div>
+
+            <div class="form-group">
+              <label>Is CGPA important?</label>
+              <div class="radio-group">
+                <label><input type="radio" name="cgpa" id="cgpa-yes" value="yes" /> Yes, it's required</label>
+                <label><input type="radio" name="cgpa" id="cgpa-no" value="no" checked /> No, not important</label>
+                <label><input type="radio" name="cgpa" id="cgpa-somewhat" value="somewhat" /> Somewhat important</label>
+              </div>
+
+              <!-- slider shown only when "Yes" is selected -->
+              <div id="cgpaSliderContainer" class="cgpa-slider" style="display:none; margin-top:0.75rem;">
+                <label for="cgpaRange" style="display:block; font-weight:600; margin-bottom:0.3rem;">Minimum CGPA required</label>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                  <input type="range" id="cgpaRange" min="0" max="10" step="0.01" value="7.50" />
+                  <output id="cgpaValue" aria-live="polite" style="min-width:4.5rem; font-weight:700;">7.50</output>
+                </div>
+                <small style="display:block; color:#666; margin-top:0.35rem;">Set minimum CGPA (0.00 - 10.00)</small>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Is years of experience important?</label>
+              <div class="radio-group">
+                <label><input type="radio" name="experience" id="experience-yes" value="yes" /> Yes, it's required</label>
+                <label><input type="radio" name="experience" id="experience-no" value="no" checked /> No, not important</label>
+                <label><input type="radio" name="experience" id="experience-somewhat" value="somewhat" /> Somewhat important</label>
+              </div>
+
+              <!-- slider shown only when "Yes" is selected -->
+              <div id="experienceSliderContainer" class="experience-slider" style="display:none; margin-top:0.75rem;">
+                <label for="experienceRange" style="display:block; font-weight:600; margin-bottom:0.3rem;">Minimum years of experience</label>
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                  <input type="range" id="experienceRange" min="0" max="30" step="1" value="2" />
+                  <output id="experienceValue" aria-live="polite" style="min-width:4.5rem; font-weight:700;">2 yrs</output>
+                </div>
+                <small style="display:block; color:#666; margin-top:0.35rem;">Use the slider to set required years (integer).</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Tell us other fields of consideration</label>
+            <textarea placeholder="Share any additional requirements, preferences, or considerations for the ideal candidate..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="uploadFile">Upload candidate package for ranking</label>
+            <input id="uploadFile" class="file-input" type="file"
+                   aria-describedby="uploadHelp" />
+            <small id="uploadHelp">Accepted: .zip, .pdf, .docx, .doc — used for automatic ranking.</small>
+          </div>
+
+          <button class="submit-btn" id="submitBtn">Submit Job Posting</button>
+        </div>
+
+        <aside class="leaderboard" id="leaderboard" aria-hidden="true">
+          <div class="leaderboard-header" id="leaderboardHeader" aria-hidden="true">
+            <h3>Candidate Leaderboard</h3>
+            <button id="closeLeaderboard" class="ghost-btn" aria-label="Back to editing">Back</button>
+          </div>
+
+          <!-- results will be shown here (populated by script.js). -->
+          <section id="results" class="results" aria-live="polite"></section>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <!-- Environment Configuration -->
+  <script>
+    // Configure environment variables for the application
+    // Set your Gemini API key here or via environment variables
+    window.ENV = {
+      API_BASE_URL: 'http://localhost:5000/api',
+      GEMINI_API_KEY: 'AIzaSyAOUclE1h9W6wilqJIjTb4RAvNO_mzPPo4', // Replace with actual key
+      API_KEY: '' // Optional HireSight API key
+    };
+  </script>
+
+  <!-- Add Lottie library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <!-- Add jsPDF library for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Add API configuration -->
+  <script src="../api-config.js"></script>
+  <script src="/COMPANY_MAIN_PAGE/script.js"></script>
+</body>
+</html>

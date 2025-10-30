@@ -1,0 +1,150 @@
+<!-- ======= index.html ======= -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HireSight — Modern Job Landing</title>
+  <meta name="description" content="Modern job landing page inspired by Jobbie. Responsive, animated, plain HTML/CSS/JS." />
+  <link rel="stylesheet" href="/CANDIDATE_SIGNUP/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="#"><img src="/CANDIDATE_SIGNUP/img4.png" alt="HireSight" height="40px" width="100px"></a>
+      <nav class="nav" id="nav">
+        <a href="#jobs">Jobs</a>
+        <a href="#features">Features</a>
+        <a href="#companies">Companies</a>
+        <a href="#contact">Contact</a>
+        <button class="btn btn-primary" id="ctaTop">Sign Up</button>
+      </nav>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-left">
+          <h1>Find your next <span class="highlight">great job</span> faster.</h1>
+          <p class="lead">Beautiful listings, smart filters and real companies — all in one easy interface. Built for speed and clarity.</p>
+
+          <form class="search" id="searchForm" aria-label="Job search">
+            <input type="text" id="searchInput" placeholder="Job title, company, or keyword" />
+            <select id="locationSelect">
+              <option value="any">Anywhere</option>
+              <option value="remote">Remote</option>
+              <option value="india">India</option>
+              <option value="us">United States</option>
+              <option value="eu">Europe</option>
+            </select>
+            <button class="btn btn-ghost" type="submit">Search</button>
+          </form>
+
+          <div class="hero-stats">
+            <div>
+              <strong id="jobsCount">1,254</strong>
+              <span>Jobs listed</span>
+            </div>
+            <div>
+              <strong>320</strong>
+              <span>Companies</span>
+            </div>
+            <div>
+              <strong>98%</strong>
+              <span>Response rate</span>
+            </div>
+          </div>
+
+        </div>
+        <div class="hero-right">
+          <div class="card-preview">
+            <header>
+              <span class="badge">Featured</span>
+              <div class="dots">● ● ●</div>
+            </header>
+            <h3>Senior Frontend Engineer</h3>
+            <p class="muted">Acme Studios — Remote</p>
+            <div class="card-meta">
+              <span>Full-time</span>
+              <span>₹2.4L — ₹5.0L</span>
+              <span>Posted 2d ago</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-outline">Save</button>
+              <button class="btn btn-primary">Apply</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="jobs" class="jobs container">
+      <h2 class="section-title">Latest Jobs</h2>
+      <div class="jobs-grid" id="jobsGrid">
+        <!-- Job cards will be injected by script.js -->
+      </div>
+      <div class="jobs-actions">
+        <button class="btn" id="loadMore">Load more</button>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <div class="container">
+        <h2 class="section-title">Why people love HireSight</h2>
+        <div class="features-grid">
+          <div class="feature">
+            <h3>Smart Search</h3>
+            <p>Find relevant roles with instant keyword highlighting and filters.</p>
+          </div>
+          <div class="feature">
+            <h3>Company Profiles</h3>
+            <p>See company culture and benefits before you apply.</p>
+          </div>
+          <div class="feature">
+            <h3>Clean UI</h3>
+            <p>Fast, readable listings so you can focus on what matters.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="companies" class="companies container">
+      <h2 class="section-title">Trusted by</h2>
+      <div class="logos">
+        <div class="logo"><img src="/CANDIDATE_SIGNUP/img1.jpg"  height="100px"></div>
+        <div class="logo"><img src="/CANDIDATE_SIGNUP/img2.jpg"  height="100px"></div>
+        <div class="logo"><img src="/CANDIDATE_SIGNUP/img3.jpg"  height="100px"></div>
+      </div>
+    </section>
+
+    <section id="contact" class="contact">
+      <div class="container contact-inner">
+        <div class="contact-left">
+          <h2>Get early access</h2>
+          <p>Join the waitlist and we’ll notify you when we launch new features.</p>
+        </div>
+        <form class="contact-form" id="contactForm">
+          <input type="email" id="email" placeholder="Your email" required />
+          <button class="btn btn-primary" type="submit">Join waitlist</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>© <span id="year">2025</span> HireSight — Built with LOVE</div>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/CANDIDATE_SIGNUP/script.js"></script>
+</body>
+</html>
