@@ -109,6 +109,16 @@ submitBtn.addEventListener("click", async (e) => {
     formData.append('calculate_score', 'true');
     formData.append('use_ai', 'true');
 
+    // Store job details in sessionStorage for later use (email sending)
+    const jobDetails = {
+      role: role,
+      skills: skills,
+      description: additional || `We are hiring for ${role}. Required skills: ${skills}`,
+      cgpa: cgpaValue,
+      experience: experienceValue
+    };
+    sessionStorage.setItem('currentJobDetails', JSON.stringify(jobDetails));
+
     const response = await fetch(`${HireSightAPI.baseUrl}/resume/parse-comprehensive`, {
       method: 'POST',
       body: formData
@@ -417,8 +427,33 @@ async function sendInterviewRequests() {
   sendBtn.textContent = '📤 Sending...';
 
   try {
-    // Call the real API
-    const response = await HireSightAPI.sendInterviewRequests(selectedCandidates);
+    // Get stored job details
+    const jobDetails = JSON.parse(sessionStorage.getItem('currentJobDetails') || '{}');
+    
+    // Get company info from Supabase auth
+    let companyInfo = {
+      company_name: 'HireSight Partner Company',
+      company_email: 'hr@company.com'
+    };
+    
+    try {
+      const user = await getCurrentUser();
+      if (user && user.user_metadata) {
+        companyInfo = {
+          company_name: user.user_metadata.company_name || companyInfo.company_name,
+          company_email: user.email || companyInfo.company_email
+        };
+      }
+    } catch (authError) {
+      console.warn('Could not fetch user info, using default company info:', authError);
+    }
+
+    // Call the real API with complete data
+    const response = await HireSightAPI.sendInterviewRequests(
+      selectedCandidates,
+      jobDetails,
+      companyInfo
+    );
 
     if (response.success) {
       // Show Lottie animation with success message
@@ -429,6 +464,14 @@ async function sendInterviewRequests() {
 
       // Update count
       document.querySelector('.selection-count').textContent = '0';
+      
+      // Show detailed success message
+      if (response.sent > 0) {
+        console.log(`✅ Successfully sent ${response.sent} email(s)`);
+        if (response.failed > 0) {
+          console.warn(`⚠️ Failed to send ${response.failed} email(s)`);
+        }
+      }
     } else {
       throw new Error(response.error || 'Failed to send interview requests');
     }

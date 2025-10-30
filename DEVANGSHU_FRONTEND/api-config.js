@@ -233,13 +233,23 @@ const HireSightAPI = {
   /**
    * Send interview requests to selected candidates
    * @param {Array} candidates - Array of candidate objects with name and email
+   * @param {object} jobDetails - Job details (role, description, skills)
+   * @param {object} companyInfo - Company information (company_name, company_email)
    * @param {Array} questions - Optional array of interview questions
    */
-  async sendInterviewRequests(candidates, questions = null) {
+  async sendInterviewRequests(candidates, jobDetails = null, companyInfo = null, questions = null) {
     try {
       const body = {
         candidates: candidates
       };
+
+      if (jobDetails) {
+        body.job_details = jobDetails;
+      }
+
+      if (companyInfo) {
+        body.company_info = companyInfo;
+      }
 
       if (questions) {
         body.questions = questions;

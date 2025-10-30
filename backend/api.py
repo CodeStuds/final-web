@@ -61,6 +61,14 @@ except ImportError:
         GitHubAnalyzer = None
         CandidateMatcher = None
 
+# Import email service
+try:
+    from ibhanwork.emailsender import EmailService, send_interview_invitations
+except ImportError:
+    logger.warning("Email service module not available")
+    EmailService = None
+    send_interview_invitations = None
+
 # Import unified candidate scorer
 try:
     from candidate_scorer import CandidateScorer, CompatibilityScorer
@@ -1298,11 +1306,16 @@ def send_interview_requests():
             {"name": "John Doe", "email": "john@example.com"},
             ...
         ],
-        "questions": [
-            "Question 1",
-            "Question 2",
-            ...
-        ] (optional)
+        "job_details": {
+            "role": "Backend Developer",
+            "description": "Job description text...",
+            "skills": "Python, Django, PostgreSQL"
+        },
+        "company_info": {
+            "company_name": "Tech Corp",
+            "company_email": "hr@techcorp.com"
+        },
+        "questions": [...] (optional)
     }
     """
     try:
@@ -1315,6 +1328,8 @@ def send_interview_requests():
             }), 400
 
         candidates = data['candidates']
+        job_details = data.get('job_details', {})
+        company_info = data.get('company_info', {})
         questions = data.get('questions', [])
 
         if not isinstance(candidates, list) or len(candidates) == 0:
@@ -1323,33 +1338,72 @@ def send_interview_requests():
                 'error': 'Candidates must be a non-empty list'
             }), 400
 
+        # Extract job and company information
+        company_name = company_info.get('company_name', 'Our Company')
+        role = job_details.get('role', 'Position')
+        job_description = job_details.get('description', 'Please check our website for details.')
+        skills = job_details.get('skills', '')
+
         # Log the email requests
-        logger.info(f"📧 Email interview requests to {len(candidates)} candidates")
+        logger.info(f"📧 Sending interview requests to {len(candidates)} candidates")
+        logger.info(f"   Company: {company_name}")
+        logger.info(f"   Role: {role}")
         for candidate in candidates:
-            logger.info(f"  → {candidate.get('name')} ({candidate.get('email')})")
+            logger.info(f"   → {candidate.get('name')} ({candidate.get('email')})")
 
-        # TODO: Integrate with actual email service (SendGrid, AWS SES, SMTP, etc.)
-        # For now, we'll just log the requests and return success
-        # You can integrate your preferred email service here
+        # Check if email service is available
+        if not EmailService or not send_interview_invitations:
+            logger.warning("⚠️ Email service not available - emails will not be sent")
+            return jsonify({
+                'success': False,
+                'error': 'Email service not configured. Please check backend configuration.',
+                'message': 'Email module not found or not properly configured'
+            }), 503
 
-        # Example integration points:
-        # 1. SMTP: Use smtplib to send emails via SMTP
-        # 2. SendGrid: Use sendgrid Python library
-        # 3. AWS SES: Use boto3 to send via Amazon SES
-        # 4. Mailgun: Use requests to call Mailgun API
-
-        # For demonstration, we're returning success
-        # In production, you would actually send emails here
-
-        return jsonify({
-            'success': True,
-            'message': f'Interview requests sent to {len(candidates)} candidates',
-            'recipients': [c.get('email') for c in candidates],
-            'timestamp': datetime.now().isoformat()
-        })
+        # Send emails using the email service
+        try:
+            result = send_interview_invitations(
+                candidates=candidates,
+                company_name=company_name,
+                role=role,
+                job_description=job_description,
+                skills=skills
+            )
+            
+            # Check if any emails were sent
+            if result['success']:
+                logger.info(f"✅ Successfully sent {result['sent']} emails")
+                if result['failed'] > 0:
+                    logger.warning(f"⚠️ Failed to send {result['failed']} emails")
+                
+                return jsonify({
+                    'success': True,
+                    'message': f"Interview requests sent to {result['sent']} candidate(s)",
+                    'sent': result['sent'],
+                    'failed': result['failed'],
+                    'total': result['total'],
+                    'recipients': [c['email'] for c in result['sent_to']],
+                    'failed_recipients': [c['email'] for c in result['failed_to']],
+                    'timestamp': result['timestamp']
+                })
+            else:
+                logger.error(f"❌ Failed to send emails: {result.get('error', 'Unknown error')}")
+                return jsonify({
+                    'success': False,
+                    'error': result.get('error', 'Failed to send emails'),
+                    'details': result
+                }), 500
+                
+        except Exception as email_error:
+            logger.error(f"❌ Email service error: {str(email_error)}")
+            return jsonify({
+                'success': False,
+                'error': f'Email service error: {str(email_error)}',
+                'message': 'Failed to send emails. Check SMTP configuration.'
+            }), 500
 
     except Exception as e:
-        logger.error(f"Error sending interview requests: {str(e)}")
+        logger.error(f"Error processing interview request: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
